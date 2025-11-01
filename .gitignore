@@ -38,3 +38,6 @@ build/
 
 ### Generated pom.xml files ###
 dependency-reduced-pom.xml
+
+### Application Properties ###
+src/main/resources/application.properties

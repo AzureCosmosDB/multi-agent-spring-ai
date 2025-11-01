@@ -16,8 +16,7 @@ public class RefundItem {
 
     private final PurchaseHistoryRepository purchaseHistoryRepository;
 
-    private static final org.slf4j.Logger
-            logger = LoggerFactory.getLogger(RefundItem.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(RefundItem.class);
 
     public RefundItem(PurchaseHistoryRepository purchaseHistoryRepository) {
         this.purchaseHistoryRepository = purchaseHistoryRepository;
@@ -37,12 +36,10 @@ public class RefundItem {
                 purchaseHistoryRepository.save(purchasedItem);
                 return String.format(
                         "Refund processed for product %s for user ID %s. Item ID: %s.",
-                        purchasedItem.getItemId(), userId, itemId
-                );
+                        purchasedItem.getItemId(), userId, itemId);
             } else {
                 return String.format("Item ID %s not found in purchase history.", itemId);
             }
-
 
         } catch (Exception e) {
             logger.error("Error ordering item: ", e);

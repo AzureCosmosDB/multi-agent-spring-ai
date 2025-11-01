@@ -15,7 +15,6 @@ public class AgentTransfer {
     private String userId;
     private String tenantId;
 
-
     @Tool(description = "Get routable agents")
     public List<String> getRoutableAgents() {
         return routableAgents;
@@ -26,7 +25,8 @@ public class AgentTransfer {
         return null;
     }
 
-    private List<String > routableAgents = new ArrayList<>();
+    private List<String> routableAgents = new ArrayList<>();
+
     public AgentTransfer(CosmosChatSession chatSession, String sessionId, String userId, String tenantId) {
         this.chatSession = chatSession;
         this.sessionId = sessionId;
@@ -37,6 +37,7 @@ public class AgentTransfer {
     @Tool(description = "Transfer agent to another agent")
     String transferAgent(String agentName) {
         chatSession.patchActiveAgent(this.sessionId, this.userId, this.tenantId, agentName);
-        return "Agent transferred to " + agentName;}
+        return "Agent transferred to " + agentName;
+    }
 
 }

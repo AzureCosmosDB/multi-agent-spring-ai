@@ -38,8 +38,7 @@ import java.util.*;
 @Service
 public class MultiAgentService {
 
-    private static final org.slf4j.Logger
-    logger = LoggerFactory.getLogger(MultiAgentService.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(MultiAgentService.class);
 
     @Value("${spring.cloud.azure.cosmos.database.name}")
     private String databaseName;
@@ -69,8 +68,6 @@ public class MultiAgentService {
     private CosmosChatMemory chatMemory;
     private CosmosChatSession chatSession;
 
-
-
     @PostConstruct
     public void initialize() {
         chatMemory = new CosmosChatMemory(cosmosAsyncClient, databaseName);
@@ -79,58 +76,62 @@ public class MultiAgentService {
 
         List<String> allAgents = List.of("Sales", "Product", "Refunds");
 
-
         Agent productAgent = new Agent("Product",
                 "You are a product agent that can help the user search for products. " +
-                "Ask for what products the user is interested in. Call productSearch() and pass in the user's " +
-                "question as an argument. Make sure you output the Product ID that comes back for each product." +
-                "If the user wants to order one of the products, transfer to Sales." +
-                "You can also transfer the user to another agent by calling getRoutableAgents() to" +
-                "determine which agents you can call, then call transferAgent() tool passing the appropriate agent" +
-                "for the question being asked.",
+                        "Ask for what products the user is interested in. Call productSearch() and pass in the user's "
+                        +
+                        "question as an argument. Make sure you output the Product ID that comes back for each product."
+                        +
+                        "If the user wants to order one of the products, transfer to Sales." +
+                        "You can also transfer the user to another agent by calling getRoutableAgents() to" +
+                        "determine which agents you can call, then call transferAgent() tool passing the appropriate agent"
+                        +
+                        "for the question being asked.",
                 List.of(new ProductSearch(vectorStore)),
-                agentTransfersAllowed("Product", allAgents)
-        );
+                agentTransfersAllowed("Product", allAgents));
 
         Agent salesAgent = new Agent("Sales",
                 "You are a sales agent." +
-                "For now all you can do is order an item, or transfer the user to another agent by calling " +
-                "getRoutableAgents() to determine which agents you can call, then call transferAgent() passing " +
-                "the appropriate agent for the question being asked." +
-                "If the user wants to order an item, you must ask for the user id and item id. " +
-                "If the context information shows that the user has asked for product information," +
-                "Then get the item id from there (it will be the Product ID) but confirm with the user." +
-                "Then call the orderItem() tool passing userId and itemId to it, and return the result. " +
-                "If the user wants to be notified of the sale, ask for the notification method (email or phone) and user Id " +
-                "(unless user id is already present in context information, then get it from there)." +
-                "Then call the notifyCustomer() method passing userId and method values to it. " +
-                "If the user wants a refund, transfer to Refunds. ",
-                List.of(new NotifyCustomer(usersRepository), new OrderItem(purchaseHistoryRepository, productsRepository)),
-                agentTransfersAllowed("Sales", allAgents)
-        );
+                        "For now all you can do is order an item, or transfer the user to another agent by calling " +
+                        "getRoutableAgents() to determine which agents you can call, then call transferAgent() passing "
+                        +
+                        "the appropriate agent for the question being asked." +
+                        "If the user wants to order an item, you must ask for the user id and item id. " +
+                        "If the context information shows that the user has asked for product information," +
+                        "Then get the item id from there (it will be the Product ID) but confirm with the user." +
+                        "Then call the orderItem() tool passing userId and itemId to it, and return the result. " +
+                        "If the user wants to be notified of the sale, ask for the notification method (email or phone) and user Id "
+                        +
+                        "(unless user id is already present in context information, then get it from there)." +
+                        "Then call the notifyCustomer() method passing userId and method values to it. " +
+                        "If the user wants a refund, transfer to Refunds. ",
+                List.of(new NotifyCustomer(usersRepository),
+                        new OrderItem(purchaseHistoryRepository, productsRepository)),
+                agentTransfersAllowed("Sales", allAgents));
 
         Agent refundsAgent = new Agent("Refunds",
-        "You are a refund agent." +
-                "For now all you can do is arrange a refund or transfer the user to another agent by calling " +
-                "getRoutableAgents() to determine which agents you can call, then call transferAgent() " +
-                "passing the appropriate agent for the question being asked." +
-                "If the user wants a refund, you must ask for the user id and item id." +
-                "If the context information shows that the user has asked for product information," +
-                "then get the item id from there (it will be the Product ID) but confirm with the user." +
-                "Then call the refundItem() tool passing userId and itemId to it, and return the result. " +
-                "If the user wants to be notified of the refund, ask for the notification method (email or phone) and user Id " +
-                "(unless user id is already present in context information, then get it from there)." +
-                "Then call the notifyCustomer() method passing userId and method values to it. " +
-                "You must return the response from refundItem() to the user, and notifyCustomer() method if called." ,
+                "You are a refund agent." +
+                        "For now all you can do is arrange a refund or transfer the user to another agent by calling " +
+                        "getRoutableAgents() to determine which agents you can call, then call transferAgent() " +
+                        "passing the appropriate agent for the question being asked." +
+                        "If the user wants a refund, you must ask for the user id and item id." +
+                        "If the context information shows that the user has asked for product information," +
+                        "then get the item id from there (it will be the Product ID) but confirm with the user." +
+                        "Then call the refundItem() tool passing userId and itemId to it, and return the result. " +
+                        "If the user wants to be notified of the refund, ask for the notification method (email or phone) and user Id "
+                        +
+                        "(unless user id is already present in context information, then get it from there)." +
+                        "Then call the notifyCustomer() method passing userId and method values to it. " +
+                        "You must return the response from refundItem() to the user, and notifyCustomer() method if called.",
                 List.of(new NotifyCustomer(usersRepository), new RefundItem(purchaseHistoryRepository)),
-                agentTransfersAllowed("Refunds", allAgents)
-        );
+                agentTransfersAllowed("Refunds", allAgents));
 
         orchestrator.registerAgent(productAgent);
         orchestrator.registerAgent(salesAgent);
         orchestrator.registerAgent(refundsAgent);
 
     }
+
     /**
      * This method returns a list of agents that the current agent can transfer to.
      *
@@ -171,8 +172,9 @@ public class MultiAgentService {
         ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = new ClassPathResource("data/products.json").getInputStream();
 
-        List<Map<String, Object>> products = mapper.readValue(inputStream, new TypeReference<>() {});
-        List<Document> documents = new ArrayList<>();
+        List<Map<String, Object>> products = mapper.readValue(inputStream, new TypeReference<>() {
+        });
+        List<Document> allDocuments = new ArrayList<>();
 
         for (Map<String, Object> product : products) {
             StringBuilder content = new StringBuilder();
@@ -187,9 +189,36 @@ public class MultiAgentService {
             doc.getMetadata().put("productName", product.get("product_name").toString());
             doc.getMetadata().put("category", product.get("category").toString());
             doc.getMetadata().put("price", product.get("price").toString());
-            documents.add(doc);
+            allDocuments.add(doc);
         }
-        vectorStore.add(documents);
+
+        // Process in batches of 50 to avoid rate limiting with 5K TPM embedding
+        // capacity
+        int batchSize = 50;
+        int totalBatches = (int) Math.ceil((double) allDocuments.size() / batchSize);
+        logger.info("Processing {} documents in {} batches of {}", allDocuments.size(), totalBatches, batchSize);
+
+        for (int i = 0; i < allDocuments.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, allDocuments.size());
+            List<Document> batch = allDocuments.subList(i, end);
+            int batchNum = (i / batchSize) + 1;
+
+            logger.info("Processing batch {}/{} ({} documents)", batchNum, totalBatches, batch.size());
+            vectorStore.add(batch);
+            logger.info("Completed batch {}/{}", batchNum, totalBatches);
+
+            // Add delay between batches to avoid rate limiting (except for last batch)
+            if (end < allDocuments.size()) {
+                try {
+                    logger.info("Waiting 5 seconds before next batch to avoid rate limiting...");
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Data loading interrupted", e);
+                }
+            }
+        }
+
         User user = new User();
         user.setId("1");
         user.setUserId("1");

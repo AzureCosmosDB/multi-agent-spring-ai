@@ -1,0 +1,12 @@
+spring.cloud.azure.cosmos.endpoint=${AZURE_COSMOSDB_ENDPOINT}
+spring.cloud.azure.cosmos.database.name=MultiAgentDB
+spring.cloud.azure.cosmos.queryMetricsEnabled=true
+spring.cloud.azure.cosmos.responseDiagnosticsEnabled=true
+spring.ai.azure.openai.endpoint=${AZURE_OPENAI_ENDPOINT}
+spring.ai.azure.openai.embedding.options.deployment-name=text-embedding-ada-002
+spring.ai.azure.openai.chat.options.deployment-name=gpt-4o-mini
+spring.ai.azure.openai.chat.options.temperature=0.7
+spring.autoconfigure.exclude=\
+  org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\
+  org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration
+

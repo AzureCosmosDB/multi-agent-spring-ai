@@ -20,8 +20,7 @@ import java.util.UUID;
 
 public class CosmosChatMemory implements ChatMemory {
     private final CosmosAsyncContainer container;
-    private static final org.slf4j.Logger
-    logger = LoggerFactory.getLogger(CosmosChatMemory.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(CosmosChatMemory.class);
 
     public CosmosChatMemory(CosmosAsyncClient cosmosAsyncClient, String databaseName) {
         CosmosAsyncDatabase db = cosmosAsyncClient.getDatabase(databaseName);
@@ -54,7 +53,10 @@ public class CosmosChatMemory implements ChatMemory {
         return container.createItem(doc, new PartitionKey(conversationId), new CosmosItemRequestOptions());
     }
 
-    @Override
+    public List<Message> get(String conversationId) {
+        return get(conversationId, -1);
+    }
+
     public List<Message> get(String conversationId, int lastN) {
         String query = "SELECT * FROM c WHERE c.conversationId = @conversationId ORDER BY c._ts ASC";
 
@@ -67,15 +69,15 @@ public class CosmosChatMemory implements ChatMemory {
         CosmosPagedFlux<Map<String, Object>> results = container.queryItems(
                 querySpec,
                 options,
-                (Class<Map<String, Object>>) (Class<?>) Map.class
-        );
+                (Class<Map<String, Object>>) (Class<?>) Map.class);
 
         List<Map<String, Object>> messageDocs = results.byPage()
                 .flatMapIterable(FeedResponse::getResults)
                 .collectList()
                 .block();
 
-        if (messageDocs == null) return Collections.emptyList();
+        if (messageDocs == null)
+            return Collections.emptyList();
 
         if (lastN > 0 && messageDocs.size() > lastN) {
             messageDocs = messageDocs.subList(messageDocs.size() - lastN, messageDocs.size());
@@ -98,15 +100,15 @@ public class CosmosChatMemory implements ChatMemory {
         CosmosPagedFlux<Map<String, Object>> results = container.queryItems(
                 querySpec,
                 options,
-                (Class<Map<String, Object>>) (Class<?>) Map.class
-        );
+                (Class<Map<String, Object>>) (Class<?>) Map.class);
 
         List<Map<String, Object>> items = results.byPage()
                 .flatMapIterable(FeedResponse::getResults)
                 .collectList()
                 .block();
 
-        if (items == null || items.isEmpty()) return;
+        if (items == null || items.isEmpty())
+            return;
 
         List<CosmosItemOperation> operations = items.stream()
                 .map(item -> CosmosBulkOperations.getDeleteItemOperation(
