@@ -12,7 +12,6 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatMessage implements Message {
 
-
     private String role;
 
     @JsonProperty("text")
@@ -20,6 +19,7 @@ public class ChatMessage implements Message {
 
     public ChatMessage() {
     }
+
     public ChatMessage(String role, String content) {
         this.role = role;
         this.content = content;
@@ -34,7 +34,12 @@ public class ChatMessage implements Message {
     }
 
     @Override
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getText() {
+        return content;
+    }
+
+    public String getContent() {
         return content;
     }
 

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: multi-agent-spring-ai
+metadata:
+  template: multi-agent-spring-ai
+pipeline:
+  provider: github
+hooks:
+  preprovision:
+    posix:
+      shell: sh
+      interactive: false
+      continueOnError: false
+      run: |
+        # Check if OWNER_EMAIL is already set in azd environment
+        EXISTING_OWNER=$(azd env get-value OWNER_EMAIL 2>/dev/null || echo "")
+        if [ -z "$EXISTING_OWNER" ]; then
+          CURRENT_USER=$(az account show --query user.name -o tsv 2>/dev/null || echo "user@example.com")
+          echo "Auto-setting OWNER_EMAIL to: $CURRENT_USER"
+          azd env set OWNER_EMAIL "$CURRENT_USER"
+        else
+          echo "OWNER_EMAIL already set to: $EXISTING_OWNER"
+        fi
+    windows:
+      shell: pwsh
+      interactive: false
+      continueOnError: false
+      run: |
+        # Set OWNER_EMAIL from current Azure user
+        try {
+          $currentUser = az account show --query user.name -o tsv
+          if ($currentUser -and $currentUser.Trim() -ne "") {
+            Write-Host "Setting OWNER_EMAIL to: $($currentUser.Trim())"
+            azd env set OWNER_EMAIL $currentUser.Trim()
+          } else {
+            Write-Host "Could not get current user, setting default"
+            azd env set OWNER_EMAIL "user@example.com"
+          }
+        } catch {
+          Write-Host "Could not get current user, setting default"
+          azd env set OWNER_EMAIL "user@example.com"
+        }
+  postprovision:
+    posix:
+      shell: sh
+      interactive: true
+      continueOnError: false
+      run: |
+        echo "
+        spring.cloud.azure.cosmos.endpoint=${AZURE_COSMOSDB_ENDPOINT}
+        spring.cloud.azure.cosmos.database.name=MultiAgentDB
+        spring.cloud.azure.cosmos.queryMetricsEnabled=true
+        spring.cloud.azure.cosmos.responseDiagnosticsEnabled=true
+        spring.ai.azure.openai.endpoint=${AZURE_OPENAI_ENDPOINT}
+        spring.ai.azure.openai.embedding.options.deployment-name=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT}
+        spring.ai.azure.openai.chat.options.deployment-name=${AZURE_OPENAI_GPT_DEPLOYMENT}
+        spring.ai.azure.openai.chat.options.temperature=0.7
+        spring.autoconfigure.exclude=\
+          org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\
+          org.springframework.ai.vectorstore.cosmosdb.autoconfigure.CosmosDBVectorStoreAutoConfiguration,\
+          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration,\
+          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration
+        " > ./src/main/resources/application.properties
+    windows:
+      shell: pwsh
+      interactive: true
+      continueOnError: false
+      run: |
+        echo "
+        spring.cloud.azure.cosmos.endpoint=$env:AZURE_COSMOSDB_ENDPOINT
+        spring.cloud.azure.cosmos.database.name=MultiAgentDB
+        spring.cloud.azure.cosmos.queryMetricsEnabled=true
+        spring.cloud.azure.cosmos.responseDiagnosticsEnabled=true
+        spring.ai.azure.openai.endpoint=$env:AZURE_OPENAI_ENDPOINT
+        spring.ai.azure.openai.embedding.options.deployment-name=$env:AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        spring.ai.azure.openai.chat.options.deployment-name=$env:AZURE_OPENAI_GPT_DEPLOYMENT
+        spring.ai.azure.openai.chat.options.temperature=0.7
+        spring.autoconfigure.exclude=\
+          org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\
+          org.springframework.ai.vectorstore.cosmosdb.autoconfigure.CosmosDBVectorStoreAutoConfiguration,\
+          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration,\
+          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration
+        " > ./src/main/resources/application.properties

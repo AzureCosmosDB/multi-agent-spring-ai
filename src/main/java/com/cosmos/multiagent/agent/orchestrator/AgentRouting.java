@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.util.Assert;
 
 /**
@@ -78,8 +79,7 @@ import org.springframework.util.Assert;
  *
  */
 public class AgentRouting {
-    private static final org.slf4j.Logger
-    logger = LoggerFactory.getLogger(AgentRouting.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(AgentRouting.class);
 
     private final ChatClient chatClient;
 
@@ -159,12 +159,20 @@ public class AgentRouting {
 
                 Input: %s""", availableRoutes, input);
 
-        RoutingResponse routingResponse = chatClient.prompt(selectorPrompt).call().entity(RoutingResponse.class);
+        BeanOutputConverter<RoutingResponse> outputConverter = new BeanOutputConverter<>(RoutingResponse.class);
+        String format = outputConverter.getFormat();
+
+        RoutingResponse routingResponse = chatClient.prompt()
+                .user(u -> u.text(selectorPrompt).param("format", format))
+                .call()
+                .entity(RoutingResponse.class);
+
         logger.info("Routing analysis: {}", routingResponse.reasoning());
         logger.info("Selected route: {}", routingResponse.selection());
 
         return routingResponse.selection();
     }
+
     public record RoutingResponse(
             /**
              * The reasoning behind the route selection, explaining why this particular

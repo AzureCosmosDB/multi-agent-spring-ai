@@ -19,8 +19,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AgentOrchestrator {
-    private static final org.slf4j.Logger
-    logger = LoggerFactory.getLogger(AgentOrchestrator.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(AgentOrchestrator.class);
     private final Map<String, Agent> agents = new ConcurrentHashMap<>();
     private final CosmosChatMemory chatMemory;
     private final CosmosChatSession chatSession;
@@ -42,20 +41,23 @@ public class AgentOrchestrator {
         agents.put(agent.name(), agent);
     }
 
-    public List<Message> handleUserInput(String input, String sessionId, String userId, String tenantId, boolean saveChatMemory) {
+    public List<Message> handleUserInput(String input, String sessionId, String userId, String tenantId,
+            boolean saveChatMemory) {
         List<Message> responseMessages = new ArrayList<>();
         logger.info("session id: {}", sessionId);
 
         String activeAgent = chatSession.getActiveAgent(sessionId, userId, tenantId);
 
-        //needs to be a local instance to patch the active agent record in a thread-safe manner
+        // needs to be a local instance to patch the active agent record in a
+        // thread-safe manner
         AgentTransfer agentTransfer = new AgentTransfer(chatSession, sessionId, userId, tenantId);
 
         logger.info("Active agent: {}", activeAgent);
 
         // Route if agent unknown
         if (activeAgent.equals("unknown")) {
-            //if activeAgent is unknown, this is the first user message, so update session name using summarize
+            // if activeAgent is unknown, this is the first user message, so update session
+            // name using summarize
             chatSession.patchSessionName(sessionId, userId, tenantId, summarize(input));
             Map<String, String> routes = new HashMap<>();
             for (Agent agent : agents.values()) {
@@ -75,11 +77,14 @@ public class AgentOrchestrator {
         }
         tools.add(agentTransfer);
 
-        // Build and call the chat client
+        // Build and call the chat client with memory advisor
+        // Use builder pattern for MessageChatMemoryAdvisor in 1.0.3
         String response = ChatClient.builder(chatModel)
                 .build()
                 .prompt(agent.systemPrompt())
-                .advisors(new MessageChatMemoryAdvisor(chatMemory, sessionId, 100))
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                        .conversationId(sessionId)
+                        .build())
                 .user(input)
                 .tools(tools.toArray())
                 .call()
@@ -129,16 +134,9 @@ public class AgentOrchestrator {
     }
 
     public String summarize(String userMessage) {
-        String prompt = "Summarize this message in 4-6 words as a session title: " + userMessage;
-
-        List<ChatMessage> messages = List.of(
-                new ChatMessage("user", prompt)
-        );
-
-        String response = chatClient.prompt(prompt).call().content();
+        String promptText = "Summarize this message in 4-6 words as a session title: " + userMessage;
+        String response = chatClient.prompt(promptText).call().content();
         return response.replaceAll("[\"\n]", "").trim();
     }
-
-
 
 }

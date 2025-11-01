@@ -21,11 +21,10 @@ public class OrderItem {
     private final PurchaseHistoryRepository purchaseHistoryRepository;
     private final ProductRepository productsRepository;
 
-    private static final org.slf4j.Logger
-            logger = LoggerFactory.getLogger(OrderItem.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OrderItem.class);
 
     public OrderItem(PurchaseHistoryRepository purchaseHistoryRepository,
-                     ProductRepository productsRepository) {
+            ProductRepository productsRepository) {
         this.purchaseHistoryRepository = purchaseHistoryRepository;
         this.productsRepository = productsRepository;
     }
@@ -55,8 +54,7 @@ public class OrderItem {
 
                 return String.format(
                         "Order placed for product %s for user ID %s. Item ID: %s.",
-                        product.getMetadata().getProductId(), userId, itemId
-                );
+                        product.getMetadata().getProductId(), userId, itemId);
 
             } else {
                 return String.format("Product %s not found.", itemId);
