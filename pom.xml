@@ -11,8 +11,8 @@
     <properties>
         <java.version>17</java.version>
         <spring.boot.version>3.2.2</spring.boot.version>
-        <!-- Using stable GA version 1.0.3 which includes CosmosDB builder fix -->
-        <spring.ai.version>1.0.3</spring.ai.version>
+        <!-- Using version 1.1.2 which includes native chat memory repository -->
+        <spring.ai.version>1.1.2</spring.ai.version>
     </properties>
 
     <repositories>
@@ -75,6 +75,10 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-azure-cosmos-db-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-chat-memory-repository-cosmos-db</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>

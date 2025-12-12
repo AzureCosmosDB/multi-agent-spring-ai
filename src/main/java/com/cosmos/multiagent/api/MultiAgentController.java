@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 package com.cosmos.multiagent.api;
 
+import com.cosmos.multiagent.agent.models.ChatMessage;
 import com.cosmos.multiagent.agent.models.ChatSession;
 import com.cosmos.multiagent.agent.orchestrator.AgentOrchestrator;
 import org.springframework.ai.chat.messages.Message;
@@ -35,8 +36,19 @@ public class MultiAgentController {
     }
 
     @GetMapping("/tenant/{tenantId}/user/{userId}/session/{sessionId}/messages{lastN}")
-    public List<Message> getSession(@PathVariable String userId, @PathVariable String tenantId, @PathVariable String sessionId, @RequestParam int lastN) {
-        return multiAgentService.getChatSession(sessionId, lastN);
+    public List<ChatMessage> getSession(@PathVariable String userId, @PathVariable String tenantId, @PathVariable String sessionId, @RequestParam int lastN) {
+        List<Message> messages = multiAgentService.getChatSession(sessionId, lastN);
+        List<ChatMessage> chatMessages = new java.util.ArrayList<>();
+        
+        for (Message msg : messages) {
+            String role = "user";
+            if (msg.getMetadata() != null && msg.getMetadata().containsKey("agent")) {
+                role = (String) msg.getMetadata().get("agent");
+            }
+            chatMessages.add(new ChatMessage(role, msg.getText()));
+        }
+        
+        return chatMessages;
     }
 
     @DeleteMapping("/tenant/{tenantId}/user/{userId}/session/{sessionId}")

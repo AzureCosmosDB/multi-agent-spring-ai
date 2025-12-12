@@ -4,10 +4,12 @@ package com.cosmos.multiagent.api;
 
 import com.azure.cosmos.CosmosAsyncClient;
 import com.cosmos.multiagent.agent.Agent;
-import com.cosmos.multiagent.agent.memory.CosmosChatMemory;
 import com.cosmos.multiagent.agent.memory.CosmosChatSession;
 import com.cosmos.multiagent.agent.models.ChatSession;
 import com.cosmos.multiagent.agent.orchestrator.AgentOrchestrator;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import com.cosmos.multiagent.api.tools.OrderItem;
 import com.cosmos.multiagent.api.tools.RefundItem;
 import com.cosmos.multiagent.repository.ProductRepository;
@@ -64,14 +66,20 @@ public class MultiAgentService {
     @Autowired
     private ProductRepository productsRepository;
 
+    @Autowired
+    private CosmosDBChatMemoryRepository chatMemoryRepository;
+
     private AgentOrchestrator orchestrator;
-    private CosmosChatMemory chatMemory;
     private CosmosChatSession chatSession;
+    private ChatMemory chatMemory;
 
     @PostConstruct
     public void initialize() {
-        chatMemory = new CosmosChatMemory(cosmosAsyncClient, databaseName);
         chatSession = new CosmosChatSession(cosmosAsyncClient, databaseName);
+        chatMemory = MessageWindowChatMemory.builder()
+                .chatMemoryRepository(chatMemoryRepository)
+                .maxMessages(20)
+                .build();
         orchestrator = new AgentOrchestrator(chatSession, chatMemory, chatModel);
 
         List<String> allAgents = List.of("Sales", "Product", "Refunds");
@@ -151,7 +159,7 @@ public class MultiAgentService {
         return chatSession;
     }
 
-    public CosmosChatMemory getChatMemory() {
+    public ChatMemory getChatMemory() {
         return chatMemory;
     }
 
@@ -160,7 +168,12 @@ public class MultiAgentService {
     }
 
     public List<Message> getChatSession(String sessionId, int lastN) {
-        return chatMemory.get(sessionId, lastN);
+        List<Message> messages = chatMemory.get(sessionId);
+        // Return last N messages if requested
+        if (lastN > 0 && messages.size() > lastN) {
+            return messages.subList(messages.size() - lastN, messages.size());
+        }
+        return messages;
     }
 
     public String getChatSessionId(String userId, String tenantId) {
