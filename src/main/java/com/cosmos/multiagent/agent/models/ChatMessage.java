@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -25,6 +26,7 @@ public class ChatMessage implements Message {
         this.content = content;
     }
 
+    @JsonProperty("role")
     public String getRole() {
         return role;
     }
@@ -45,7 +47,11 @@ public class ChatMessage implements Message {
 
     @Override
     public Map<String, Object> getMetadata() {
-        return Map.of();
+        Map<String, Object> metadata = new HashMap<>();
+        if (role != null && !role.isEmpty()) {
+            metadata.put("agent", role);
+        }
+        return metadata;
     }
 
     @Override
