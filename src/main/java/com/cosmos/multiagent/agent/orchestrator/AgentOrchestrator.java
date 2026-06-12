@@ -75,12 +75,17 @@ public class AgentOrchestrator {
         tools.add(agentTransfer);
 
         // Build and call the chat client with memory advisor
+        // Memory advisor must be outermost (lowest order) so ToolCallAdvisor's
+        // internal retries don't pass through memory on each tool call iteration
         String response = ChatClient.builder(chatModel)
                 .build()
-                .prompt(agent.systemPrompt())
-                .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
-                        .conversationId(sessionId)
-                        .build())
+                .prompt()
+                .system(agent.systemPrompt())
+                .advisors(spec -> spec
+                        .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                                .order(Integer.MIN_VALUE)
+                                .build())
+                        .param("chat_memory_conversation_id", sessionId))
                 .user(input)
                 .tools(tools.toArray())
                 .call()

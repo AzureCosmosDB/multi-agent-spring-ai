@@ -2,12 +2,13 @@
 // Licensed under the MIT License.
 package com.cosmos.multiagent.api;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.TokenCredential;
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.spring.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
+import com.azure.spring.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
+import com.azure.spring.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
 import com.azure.spring.data.cosmos.config.AbstractCosmosConfiguration;
 import com.azure.spring.data.cosmos.config.CosmosConfig;
 import com.azure.spring.data.cosmos.repository.config.EnableCosmosRepositories;
@@ -15,17 +16,10 @@ import com.azure.spring.data.cosmos.core.ResponseDiagnostics;
 import com.azure.spring.data.cosmos.core.ResponseDiagnosticsProcessor;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
-import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
-import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingOptions;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,64 +45,12 @@ public class MultiAgentConfig extends AbstractCosmosConfiguration {
     @Value("${spring.cloud.azure.cosmos.responseDiagnosticsEnabled}")
     private static boolean responseDiagnosticsEnabled;
 
-    @Value("${spring.ai.azure.openai.endpoint}")
-    private String azureOpenAIEndpoint;
-
-    @Value("${spring.ai.azure.openai.chat.options.deployment-name}")
-    private String chatDeploymentName;
-
-    @Value("${spring.ai.azure.openai.chat.options.temperature}")
-    private double chatTemperature;
-
-    @Value("${spring.ai.azure.openai.embedding.options.deployment-name}")
-    private String embeddingDeploymentName;
-
     @Bean
     public TokenCredential tokenCredential() {
         return new DefaultAzureCredentialBuilder().build();
     }
 
-    @Bean
-    public OpenAIClient azureOpenAIClient(TokenCredential tokenCredential) {
-        return new OpenAIClientBuilder()
-                .credential(tokenCredential)
-                .endpoint(azureOpenAIEndpoint)
-                .buildClient();
-    }
-
-    @Bean
-    public OpenAIClientBuilder azureOpenAIClientBuilder(TokenCredential tokenCredential) {
-        return new OpenAIClientBuilder()
-                .credential(tokenCredential)
-                .endpoint(azureOpenAIEndpoint);
-    }
-
-    @Bean
-    public ChatModel azureOpenAiChatModel(
-            OpenAIClientBuilder openAIClientBuilder,
-            ObservationRegistry observationRegistry) {
-        AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
-                .deploymentName(chatDeploymentName)
-                .temperature(chatTemperature)
-                .build();
-        // Use builder pattern which should handle toolCallingManager internally
-        return AzureOpenAiChatModel.builder()
-                .openAIClientBuilder(openAIClientBuilder)
-                .defaultOptions(options)
-                .observationRegistry(observationRegistry)
-                .build();
-    }
-
-    @Bean
-    public EmbeddingModel azureOpenAiEmbeddingModel(OpenAIClient openAIClient) {
-        AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
-                .deploymentName(embeddingDeploymentName)
-                .build();
-        return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED, options);
-    }
-
     // Single CosmosAsyncClient shared between Spring Data Cosmos and Spring AI
-    // Vector Store
     @Bean
     public CosmosAsyncClient cosmosAsyncClient() {
         return new CosmosClientBuilder()
@@ -116,11 +58,6 @@ public class MultiAgentConfig extends AbstractCosmosConfiguration {
                 .credential(new DefaultAzureCredentialBuilder().build())
                 .contentResponseOnWriteEnabled(true)
                 .buildAsyncClient();
-    }
-
-    @Bean
-    public ChatClient chatClient(AzureOpenAiChatModel chatModel) {
-        return ChatClient.builder(chatModel).build();
     }
 
     @Bean
@@ -141,7 +78,17 @@ public class MultiAgentConfig extends AbstractCosmosConfiguration {
         return this.databaseName;
     }
 
-    // Manual VectorStore bean using Spring AI 1.0.0-SNAPSHOT (has Builder fix)
+    @Bean
+    public ChatMemoryRepository chatMemoryRepository(CosmosAsyncClient cosmosAsyncClient) {
+        CosmosDBChatMemoryRepositoryConfig config = CosmosDBChatMemoryRepositoryConfig.builder()
+                .withCosmosClient(cosmosAsyncClient)
+                .withDatabaseName(databaseName)
+                .withContainerName("ChatMemory")
+                .withPartitionKeyPath("/conversationId")
+                .build();
+        return CosmosDBChatMemoryRepository.create(config);
+    }
+
     @Bean
     public VectorStore vectorStore(
             ObservationRegistry observationRegistry,
