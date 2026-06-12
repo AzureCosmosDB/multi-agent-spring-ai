@@ -29,7 +29,7 @@ The personal shopper example includes 3 agents to handle various customer servic
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) **(recommended for deployment)**
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (required by azd)
 - [Maven](https://maven.apache.org/install.html) 3.8.1 or later
-- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) or later
+- [Java 21](https://adoptium.net/temurin/releases/?version=21) or later (required by Spring Boot 4.x and Spring AI 2.x)
 
 > **Note:** All Azure resources (Cosmos DB, OpenAI, Managed Identity, etc.) are provisioned automatically using Bicep via `azd up`. No manual portal setup required.
 
