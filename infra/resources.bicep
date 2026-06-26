@@ -105,7 +105,7 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   location: location
   kind: 'OpenAI'
   properties: {
-    disableLocalAuth: true
+    disableLocalAuth: false
     customSubDomainName: 'open-ai-${resourceToken}'
     publicNetworkAccess: 'Enabled'
   }
@@ -176,5 +176,6 @@ resource openAIassignmentMI 'Microsoft.Authorization/roleAssignments@2022-04-01'
 // Outputs
 output AZURE_COSMOSDB_ENDPOINT string = cosmosDbAccount.properties.documentEndpoint
 output AZURE_OPENAI_ENDPOINT string = openAI.properties.endpoint
+output AZURE_OPENAI_ACCOUNT_NAME string = openAI.name
 output AZURE_OPENAI_EMBEDDING_DEPLOYMENT string = openAIDeployments[1].name
 output AZURE_OPENAI_GPT_DEPLOYMENT string = openAIDeployments[0].name

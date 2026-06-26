@@ -7,9 +7,12 @@ spring.ai.chat.memory.repository.cosmosdb.database-name=MultiAgentDB
 spring.ai.chat.memory.repository.cosmosdb.container-name=ChatMemory
 spring.ai.chat.memory.repository.cosmosdb.partition-key-path=/conversationId
 spring.ai.openai.base-url=${AZURE_OPENAI_ENDPOINT}
+spring.ai.openai.api-key=${AZURE_OPENAI_KEY}
 spring.ai.openai.microsoft-foundry=true
-spring.ai.openai.embedding.microsoft-deployment-name=text-embedding-3-large
-spring.ai.openai.chat.microsoft-deployment-name=gpt-4o-mini
+spring.ai.openai.embedding.microsoft-deployment-name=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:text-embedding-3-large}
+spring.ai.openai.embedding.options.model=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:text-embedding-3-large}
+spring.ai.openai.chat.microsoft-deployment-name=${AZURE_OPENAI_GPT_DEPLOYMENT:gpt-4o-mini}
+spring.ai.openai.chat.options.model=${AZURE_OPENAI_GPT_DEPLOYMENT:gpt-4o-mini}
 spring.ai.openai.chat.options.temperature=0.7
 spring.autoconfigure.exclude=\
   org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\

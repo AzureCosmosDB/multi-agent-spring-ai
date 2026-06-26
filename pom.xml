@@ -10,25 +10,9 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring.boot.version>4.1.0-RC1</spring.boot.version>
-        <spring.ai.version>2.0.0-RC1</spring.ai.version>
+        <spring.boot.version>4.1.0</spring.boot.version>
+        <spring.ai.version>2.0.0</spring.ai.version>
     </properties>
-
-    <repositories>
-        <!-- Milestone repository in case we need milestone versions -->
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestone Repository</name>
-            <url>https://repo.spring.io/milestone</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>spring-milestones</id>
-            <url>https://repo.spring.io/milestone</url>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencyManagement>
         <dependencies>
@@ -74,12 +58,12 @@
         <dependency>
             <groupId>com.azure.spring.ai</groupId>
             <artifactId>spring-ai-azure-cosmos-db-store</artifactId>
-            <version>1.0.0-RC1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.azure.spring.ai</groupId>
             <artifactId>spring-ai-model-chat-memory-repository-cosmos-db</artifactId>
-            <version>1.0.0-RC1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
