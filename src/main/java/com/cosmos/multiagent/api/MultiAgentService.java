@@ -8,7 +8,7 @@ import com.cosmos.multiagent.agent.memory.CosmosChatSession;
 import com.cosmos.multiagent.agent.models.ChatSession;
 import com.cosmos.multiagent.agent.orchestrator.AgentOrchestrator;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import com.cosmos.multiagent.api.tools.OrderItem;
 import com.cosmos.multiagent.api.tools.RefundItem;
@@ -67,7 +67,7 @@ public class MultiAgentService {
     private ProductRepository productsRepository;
 
     @Autowired
-    private CosmosDBChatMemoryRepository chatMemoryRepository;
+    private ChatMemoryRepository chatMemoryRepository;
 
     private AgentOrchestrator orchestrator;
     private CosmosChatSession chatSession;

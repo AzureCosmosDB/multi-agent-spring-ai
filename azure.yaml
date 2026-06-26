@@ -12,6 +12,20 @@ hooks:
       interactive: false
       continueOnError: false
       run: |
+        # Set AZURE_PRINCIPAL_ID from current signed-in user
+        EXISTING_PRINCIPAL=$(azd env get-value AZURE_PRINCIPAL_ID 2>/dev/null || echo "")
+        if [ -z "$EXISTING_PRINCIPAL" ]; then
+          PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo "")
+          if [ -n "$PRINCIPAL_ID" ]; then
+            echo "Auto-setting AZURE_PRINCIPAL_ID to: $PRINCIPAL_ID"
+            azd env set AZURE_PRINCIPAL_ID "$PRINCIPAL_ID"
+          else
+            echo "WARNING: Could not determine user principal ID. RBAC role assignments will not be created."
+          fi
+        else
+          echo "AZURE_PRINCIPAL_ID already set to: $EXISTING_PRINCIPAL"
+        fi
+
         # Check if OWNER_EMAIL is already set in azd environment
         EXISTING_OWNER=$(azd env get-value OWNER_EMAIL 2>/dev/null || echo "")
         if [ -z "$EXISTING_OWNER" ]; then
@@ -26,6 +40,26 @@ hooks:
       interactive: false
       continueOnError: false
       run: |
+        # Set AZURE_PRINCIPAL_ID from current signed-in user
+        try {
+          $existingPrincipal = azd env get-value AZURE_PRINCIPAL_ID 2>$null
+        } catch { $existingPrincipal = "" }
+        if (-not $existingPrincipal -or $existingPrincipal.Trim() -eq "") {
+          try {
+            $principalId = az ad signed-in-user show --query id -o tsv
+            if ($principalId -and $principalId.Trim() -ne "") {
+              Write-Host "Setting AZURE_PRINCIPAL_ID to: $($principalId.Trim())"
+              azd env set AZURE_PRINCIPAL_ID $principalId.Trim()
+            } else {
+              Write-Host "WARNING: Could not determine user principal ID. RBAC role assignments will not be created."
+            }
+          } catch {
+            Write-Host "WARNING: Could not determine user principal ID. RBAC role assignments will not be created."
+          }
+        } else {
+          Write-Host "AZURE_PRINCIPAL_ID already set to: $existingPrincipal"
+        }
+
         # Set OWNER_EMAIL from current Azure user
         try {
           $currentUser = az account show --query user.name -o tsv
@@ -46,46 +80,73 @@ hooks:
       interactive: true
       continueOnError: false
       run: |
-        echo "
-        spring.cloud.azure.cosmos.endpoint=${AZURE_COSMOSDB_ENDPOINT}
+        # Retrieve Azure OpenAI API key using env vars from Bicep outputs
+        RG_NAME="rg-${AZURE_ENV_NAME}"
+        OPENAI_ACCOUNT="${AZURE_OPENAI_ACCOUNT_NAME}"
+        if [ -z "$OPENAI_ACCOUNT" ]; then
+          OPENAI_ACCOUNT=$(az cognitiveservices account list --resource-group "$RG_NAME" --query "[0].name" -o tsv 2>/dev/null || echo "")
+        fi
+        AZURE_OPENAI_KEY=$(az cognitiveservices account keys list --name "$OPENAI_ACCOUNT" --resource-group "$RG_NAME" --query key1 -o tsv 2>/dev/null || echo "")
+        if [ -z "$AZURE_OPENAI_KEY" ]; then
+          echo "WARNING: Could not retrieve Azure OpenAI API key. Authentication may fail."
+        fi
+
+        echo "spring.cloud.azure.cosmos.endpoint=${AZURE_COSMOSDB_ENDPOINT}
         spring.cloud.azure.cosmos.database.name=MultiAgentDB
         spring.cloud.azure.cosmos.queryMetricsEnabled=true
         spring.cloud.azure.cosmos.responseDiagnosticsEnabled=true
-        spring.ai.azure.openai.endpoint=${AZURE_OPENAI_ENDPOINT}
-        spring.ai.azure.openai.embedding.options.deployment-name=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT}
-        spring.ai.azure.openai.chat.options.deployment-name=${AZURE_OPENAI_GPT_DEPLOYMENT}
-        spring.ai.azure.openai.chat.options.temperature=0.7
         spring.ai.chat.memory.repository.cosmosdb.endpoint=${AZURE_COSMOSDB_ENDPOINT}
         spring.ai.chat.memory.repository.cosmosdb.database-name=MultiAgentDB
         spring.ai.chat.memory.repository.cosmosdb.container-name=ChatMemory
         spring.ai.chat.memory.repository.cosmosdb.partition-key-path=/conversationId
+        spring.ai.openai.base-url=${AZURE_OPENAI_ENDPOINT}
+        spring.ai.openai.api-key=${AZURE_OPENAI_KEY}
+        spring.ai.openai.microsoft-foundry=true
+        spring.ai.openai.embedding.microsoft-deployment-name=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT}
+        spring.ai.openai.embedding.options.model=${AZURE_OPENAI_EMBEDDING_DEPLOYMENT}
+        spring.ai.openai.chat.microsoft-deployment-name=${AZURE_OPENAI_GPT_DEPLOYMENT}
+        spring.ai.openai.chat.options.model=${AZURE_OPENAI_GPT_DEPLOYMENT}
+        spring.ai.openai.chat.options.temperature=0.7
         spring.autoconfigure.exclude=\
           org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\
           org.springframework.ai.vectorstore.cosmosdb.autoconfigure.CosmosDBVectorStoreAutoConfiguration,\
-          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration,\
-          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration
+          com.azure.spring.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration
         " > ./src/main/resources/application.properties
     windows:
       shell: pwsh
       interactive: true
       continueOnError: false
       run: |
-        echo "
-        spring.cloud.azure.cosmos.endpoint=$env:AZURE_COSMOSDB_ENDPOINT
+        # Retrieve Azure OpenAI API key using env vars from Bicep outputs
+        $rgName = "rg-$env:AZURE_ENV_NAME"
+        $openaiAccount = $env:AZURE_OPENAI_ACCOUNT_NAME
+        if (-not $openaiAccount) {
+          $openaiAccount = az cognitiveservices account list --resource-group $rgName --query "[0].name" -o tsv 2>$null
+        }
+        $azureOpenaiKey = az cognitiveservices account keys list --name $openaiAccount --resource-group $rgName --query key1 -o tsv 2>$null
+        if (-not $azureOpenaiKey) {
+          Write-Host "WARNING: Could not retrieve Azure OpenAI API key. Authentication may fail."
+          $azureOpenaiKey = ""
+        }
+
+        echo "spring.cloud.azure.cosmos.endpoint=$env:AZURE_COSMOSDB_ENDPOINT
         spring.cloud.azure.cosmos.database.name=MultiAgentDB
         spring.cloud.azure.cosmos.queryMetricsEnabled=true
         spring.cloud.azure.cosmos.responseDiagnosticsEnabled=true
-        spring.ai.azure.openai.endpoint=$env:AZURE_OPENAI_ENDPOINT
-        spring.ai.azure.openai.embedding.options.deployment-name=$env:AZURE_OPENAI_EMBEDDING_DEPLOYMENT
-        spring.ai.azure.openai.chat.options.deployment-name=$env:AZURE_OPENAI_GPT_DEPLOYMENT
-        spring.ai.azure.openai.chat.options.temperature=0.7
         spring.ai.chat.memory.repository.cosmosdb.endpoint=$env:AZURE_COSMOSDB_ENDPOINT
         spring.ai.chat.memory.repository.cosmosdb.database-name=MultiAgentDB
         spring.ai.chat.memory.repository.cosmosdb.container-name=ChatMemory
         spring.ai.chat.memory.repository.cosmosdb.partition-key-path=/conversationId
+        spring.ai.openai.base-url=$env:AZURE_OPENAI_ENDPOINT
+        spring.ai.openai.api-key=$azureOpenaiKey
+        spring.ai.openai.microsoft-foundry=true
+        spring.ai.openai.embedding.microsoft-deployment-name=$env:AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        spring.ai.openai.embedding.options.model=$env:AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        spring.ai.openai.chat.microsoft-deployment-name=$env:AZURE_OPENAI_GPT_DEPLOYMENT
+        spring.ai.openai.chat.options.model=$env:AZURE_OPENAI_GPT_DEPLOYMENT
+        spring.ai.openai.chat.options.temperature=0.7
         spring.autoconfigure.exclude=\
           org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration,\
           org.springframework.ai.vectorstore.cosmosdb.autoconfigure.CosmosDBVectorStoreAutoConfiguration,\
-          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration,\
-          org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiEmbeddingAutoConfiguration
+          com.azure.spring.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration
         " > ./src/main/resources/application.properties

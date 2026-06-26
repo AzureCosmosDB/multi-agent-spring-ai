@@ -45,5 +45,6 @@ module resources 'resources.bicep' = {
 // Environment file outputs
 output AZURE_COSMOSDB_ENDPOINT string = resources.outputs.AZURE_COSMOSDB_ENDPOINT
 output AZURE_OPENAI_ENDPOINT string = resources.outputs.AZURE_OPENAI_ENDPOINT
+output AZURE_OPENAI_ACCOUNT_NAME string = resources.outputs.AZURE_OPENAI_ACCOUNT_NAME
 output AZURE_OPENAI_EMBEDDING_DEPLOYMENT string = resources.outputs.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
 output AZURE_OPENAI_GPT_DEPLOYMENT string = resources.outputs.AZURE_OPENAI_GPT_DEPLOYMENT
